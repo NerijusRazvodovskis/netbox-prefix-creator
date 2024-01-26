@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -16,16 +17,17 @@ var (
 	apiToken   = flag.String("token", "", "NetBox API token")
 	siteID     = flag.String("site", "", "Site ID")
 	newPrefix  = flag.String("prefix", "", "Prefix which is going to be added to NetBox")
+	prefixTag  = flag.String("tag", "", "Tag which is going to be added to the added prefix")
 )
 
 type PrefixPayload struct {
 	Prefix string `json:"prefix"`
 	Site   string `json:"site"`
 	Status string `json:"status"`
+	Tags   []int  `json:"tags"`
 }
 
 func main() {
-
 	flag.Parse()
 
 	if *apiAddress == "" {
@@ -60,17 +62,21 @@ func main() {
 	}
 
 	addPrefixToNetbox()
-
 }
 
 func addPrefixToNetbox() {
-
 	netboxApiToken := "Token " + *apiToken
+
+	tagID := 0
+	if *prefixTag != "" {
+		tagID = atoi(*prefixTag)
+	}
 
 	data := PrefixPayload{
 		Prefix: *newPrefix,
 		Site:   *siteID,
 		Status: "reserved",
+		Tags:   []int{tagID},
 	}
 
 	payloadBytes, err := json.Marshal(data)
@@ -98,4 +104,12 @@ func addPrefixToNetbox() {
 		log.Println("Error while reading the response bytes:", err)
 	}
 	log.Println(string([]byte(answer)))
+}
+
+func atoi(s string) int {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		log.Printf("Error converting %s to integer: %v", s, err)
+	}
+	return i
 }
